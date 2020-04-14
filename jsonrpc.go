@@ -78,7 +78,7 @@ type JsonRpc struct {
 }
 
 func (j *JsonRpc) SetParams(params interface{}) {
-	j.method.JsonRpcMethod.Params = params
+	j.method.Params = params
 }
 func (j *JsonRpc) NewResult(result interface{}) *JsonRpcResult {
 	return &JsonRpcResult{Jsonrpc: "2.0", Result: result, Id: j.method.Id}
