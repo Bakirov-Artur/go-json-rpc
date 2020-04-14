@@ -57,7 +57,7 @@ func JsonRpcPrase(data []byte) (*JsonRpc, error) {
 	return &jrpc, nil
 }
 
-func JsonRpcPrasePramas(data []byte, params interface{}) (*jsonrpc.JsonRpcMethod, error) {
+func JsonRpcPrasePramas(data []byte, params interface{}) (*JsonRpc, error) {
 	var jrpc JsonRpc
 	jrpc.method.Params = params
 	err := json.Unmarshal(data, &jrpc)
