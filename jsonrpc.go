@@ -1,14 +1,15 @@
 package jsonrpc
+
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"reflect"
 	"strconv"
-	"errors"
-	"fmt"
 )
 
-type Rpc interface{
+type Rpc interface {
 	Request([]byte) error
 	Response(interface{}) ([]byte, error)
 }
@@ -27,9 +28,9 @@ type JsonRpcResult struct {
 }
 
 type JsonRpcError struct {
-	Jsonrpc string           `json:"jsonrpc"`
+	Jsonrpc string            `json:"jsonrpc"`
 	Error   *JsonRpcErrorCode `json:"error"`
-	Id      interface{}      `json:"id"`
+	Id      interface{}       `json:"id"`
 }
 
 type JsonRpcErrorCode struct {
@@ -56,27 +57,44 @@ func JsonRpcPrase(data []byte) (*JsonRpc, error) {
 	return &jrpc, nil
 }
 
+func JsonRpcPrasePramas(data []byte, params interface{}) (*jsonrpc.JsonRpcMethod, error) {
+	var jrpc JsonRpc
+	jrpc.method.Params = params
+	err := json.Unmarshal(data, &jrpc)
+	if err != nil {
+		return nil, err
+	}
+	return &jrpc, nil
+}
+
 func JsonRpcErrorBuild(code int16, message string) ([]byte, error) {
-	var jrpc JsonRpc;
+	var jrpc JsonRpc
 	return json.Marshal(jrpc.NewError(code, message))
 }
-type JsonRpc struct{
-	method JsonRpcMethod
+
+type JsonRpc struct {
+	method   JsonRpcMethod
 	rpcError JsonRpcError
 }
+
+func (j *JsonRpc) SetParams(params interface{}) {
+	j.method.JsonRpcMethod.Params = params
+}
 func (j *JsonRpc) NewResult(result interface{}) *JsonRpcResult {
-	return &JsonRpcResult{Jsonrpc: "2.0", Result:result, Id:j.method.Id}
+	return &JsonRpcResult{Jsonrpc: "2.0", Result: result, Id: j.method.Id}
 }
 func (j *JsonRpc) Request(body []byte) error {
 	return json.Unmarshal(body, &j.method)
 }
 
-func (j *JsonRpc) Response(t interface{}) ([]byte, error){
+func (j *JsonRpc) Response(t interface{}) ([]byte, error) {
 	return json.Marshal(t)
 }
 
 func (j *JsonRpc) IsNotify() bool {
-	if j.method.Id != nil { return true}
+	if j.method.Id != nil {
+		return true
+	}
 	return false
 }
 
@@ -92,7 +110,7 @@ func (j *JsonRpc) NewNilError() *JsonRpcError {
 func (j *JsonRpc) Method() JsonRpcMethod {
 	return j.method
 }
-func (j *JsonRpc) ValueToInt( v interface{} ) (int64, error) {
+func (j *JsonRpc) ValueToInt(v interface{}) (int64, error) {
 	// //type Index struct { index int64 }
 	// //indx := Index(params)
 	// //x.(type)
@@ -122,7 +140,7 @@ func (j *JsonRpc) ValueToInt( v interface{} ) (int64, error) {
 	}
 }
 
-func (j *JsonRpc) ValueToString(v reflect.Value) (string, error){
+func (j *JsonRpc) ValueToString(v reflect.Value) (string, error) {
 	switch v.Elem().Kind() {
 	case reflect.String:
 		log.Println("Value type of String to String: ", v.Elem())
@@ -138,7 +156,7 @@ func (j *JsonRpc) ValueToString(v reflect.Value) (string, error){
 	}
 }
 
-func (j *JsonRpc) ValueToFloat(v reflect.Value) (float64, error){
+func (j *JsonRpc) ValueToFloat(v reflect.Value) (float64, error) {
 	switch v.Elem().Kind() {
 	case reflect.String:
 		log.Println("Value type of String to Float: ", v.Elem())
@@ -192,16 +210,22 @@ func (j *JsonRpc) SliceUnPack(vars ...interface{}) error {
 		}
 		switch vItem.Kind() {
 		case reflect.String:
-			s,e := j.ValueToString(sItem)
-			if e != nil { return e }
+			s, e := j.ValueToString(sItem)
+			if e != nil {
+				return e
+			}
 			vItem.SetString(s)
 		case reflect.Int32, reflect.Int64:
-			i,e := j.ValueToInt(sItem.Interface())
-			if e != nil { return e }
+			i, e := j.ValueToInt(sItem.Interface())
+			if e != nil {
+				return e
+			}
 			vItem.SetInt(i)
 		case reflect.Float64, reflect.Float32:
-			f,e := j.ValueToFloat(sItem)
-			if e != nil { return e }
+			f, e := j.ValueToFloat(sItem)
+			if e != nil {
+				return e
+			}
 			vItem.SetFloat(f)
 		default:
 			return errors.New(fmt.Sprintf("Unknown type change variables: ", vItem, ", kind", vItem.Kind()))
@@ -238,7 +262,7 @@ func (j *JsonRpc) MapUnPack(vars ...interface{}) error {
 		return errors.New(fmt.Sprintf("Invalid type wait Slice, have type: %v", vVarItems.Kind()))
 	}
 
-	if vVarItems.Len() != vMapItems.Len(){
+	if vVarItems.Len() != vMapItems.Len() {
 		return errors.New(fmt.Sprintf("Invalid size Map: ", vMapItems.Len(), " < params - vars > ", vVarItems.Len()))
 	}
 
@@ -263,15 +287,21 @@ func (j *JsonRpc) MapUnPack(vars ...interface{}) error {
 		switch evi.Kind() {
 		case reflect.String:
 			s, e := j.ValueToString(vMapIndex)
-			if e != nil { return e }
+			if e != nil {
+				return e
+			}
 			evi.SetString(s)
 		case reflect.Int64, reflect.Int32:
 			i, e := j.ValueToInt(vMapIndex.Interface())
-			if e != nil { return e }
+			if e != nil {
+				return e
+			}
 			evi.SetInt(i)
 		case reflect.Float64, reflect.Float32:
 			f, e := j.ValueToFloat(vMapIndex)
-			if e != nil { return e }
+			if e != nil {
+				return e
+			}
 			evi.SetFloat(f)
 		default:
 			return errors.New(fmt.Sprintf("Unknown type change variables: ", evi, ", kind", evi.Kind()))
